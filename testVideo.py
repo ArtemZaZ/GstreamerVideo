@@ -9,7 +9,7 @@ RTCP_RECV_PORT0 = 5001
 RTCP_SEND_PORT0 = 5005
 
 
-video=RTCvideo.Video(IP, RTP_RECV_PORT0, RTCP_RECV_PORT0, RTCP_SEND_PORT0)
+video=RTCvideo.Video(IP, RTP_RECV_PORT0, RTCP_RECV_PORT0, RTCP_SEND_PORT0, codec = "JPEG")
 video.drawOverlay("ring.png", x = 0, y = 0, scaleX = 0.3, scaleY = 0.2, fullScreen = True)
 
 
