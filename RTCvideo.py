@@ -237,9 +237,9 @@ class Video:
 
         self.codec = codec
         if self.codec == "JPEG":
-            self.VIDEO_CAPS = "application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)JPEG,payload=(int)26"  # caps приема
+            self.VIDEO_CAPS = "application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)JPEG"  # caps приема
         elif self.codec == 'H264':
-            self.VIDEO_CAPS = "application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)H264,payload=(int)96"  # caps приема
+            self.VIDEO_CAPS = "application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)H264"  # caps приема
         else:
             print("Error: Такого кодека нет")
             sys.exit(1)
@@ -378,7 +378,7 @@ class Video:
         self.lres0 = Gst.Pad.link(self.srcpad0, self.sinkpad0)
 
         self.rtpbin.set_property('drop-on-latency', True)
-        self.rtpbin.set_property('buffer-mode', 1)
+        self.rtpbin.set_property('buffer-mode', 0)
 
         self.rtpbin.connect('pad-added', pad_added_cb, self.videodepay0)
 
@@ -394,8 +394,13 @@ class Video:
         if not self.decoder0:
             print("ERROR: Could not create decoder0.")
             sys.exit(1)
+        ###################### VIDEORATE #########################
+        self.videorate0 = Gst.ElementFactory.make('videorate', "videorate0")
+        if not self.videorate0:
+            print("ERROR: Could not create videorate0.")
+            sys.exit(1)
 
-    ######################### GLUPLOAD ###########################
+        ######################### GLUPLOAD ###########################
         self.glupload0 = Gst.ElementFactory.make('glupload', "glupload0")  # загрузка в openGL
         if not self.glupload0:
             print("ERROR: Could not create glupload0.")
@@ -414,6 +419,7 @@ class Video:
         if not self.sink:
             print("ERROR: Could not create sink.")
             sys.exit(1)
+        self.sink.set_property('sync', False)
 
         ######################### VIDEOSCALE ##################################
 
@@ -433,6 +439,7 @@ class Video:
         ##################################################################
         self.player.add(self.videodepay0)  # добавляем все элементы в pipeline
         self.player.add(self.decoder0)
+        self.player.add(self.videorate0)
         self.player.add(self.glupload0)
         self.player.add(self.glcolorconvert0)
         self.player.add(self.glfilterapp0)
@@ -449,11 +456,17 @@ class Video:
             print("ERROR: Could not link videodepay0 with decoder0.")
             sys.exit(1)
 
-        link_ok = self.decoder0.link(self.glupload0)
+        link_ok = self.decoder0.link(self.videorate0)
         if not link_ok:
-            print("ERROR: Could not link decoder0 with videoscale0.")
+            print("ERROR: Could not link decoder0 with videorate0.")
             sys.exit(1)
 
+        
+        link_ok = self.videorate0.link(self.glupload0)
+        if not link_ok:
+            print("ERROR: Could not link videorate0 with glupload0.")
+            sys.exit(1)
+        
         link_ok = self.glupload0.link(self.glcolorconvert0)
         if not link_ok:
             print("ERROR: Could not link glupload0 with glcolorconvert0.")
@@ -468,3 +481,4 @@ class Video:
         if not link_ok:
             print("ERROR: Could not link videoscale0 with sink.")
             sys.exit(1)
+        
